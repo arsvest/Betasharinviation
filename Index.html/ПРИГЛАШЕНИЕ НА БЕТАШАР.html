@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Приглашение на Беташар</title>
+  <style>
+    body {
+      font-family: 'Georgia', serif;
+  background: url(https://png.pngtree.com/background/20250430/original/pngtree-white-roses-and-green-leaves-intersect-picture-image_16455040.jpg) repeat;
+  background-size: cover;
+  color: #444;
+  text-align: center;
+  padding: 20px;
+    }
+
+    @keyframes goldFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .invitation {
+      border: 3px solid gold;
+      border-radius: 15px;
+      padding: 30px;
+      background: rgba(255,255,255,0.9);
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 20px rgba(218,165,32,0.6);
+    }
+
+    h1 {
+      font-size: 2.5em;
+      background: linear-gradient(90deg, #FFD700, #DAA520, #FFF8DC, #FFD700);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 6s infinite linear;
+    }
+
+    @keyframes shine {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      padding: 8px;
+      width: 100%;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background: goldenrod;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 5px;
+    }
+    button:hover {
+      background: #b8860b;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fff8dc;
+      border: 1px solid #f0e68c;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .hidden {
+      display: none;
+    }
+    .counters {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    .event-info {
+      font-size: 1.1em;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .admin-panel {
+      margin-top: 30px;
+      padding: 20px;
+      border: 2px dashed goldenrod;
+      border-radius: 12px;
+      background: #fffdf5;
+    }
+  </style>
+</head>
+<body>
+  <div class="invitation">
+    <h1>Приглашение на Беташар</h1>
+    <p class="event-info" id="eventInfo"></p>
+
+    <form id="rsvpForm">
+      <label for="name">Ваше имя:</label>
+      <input type="text" id="name" required>
+
+      <label for="choice">Ваш ответ:</label>
+      <select id="choice" required>
+        <option value="">-- Выберите --</option>
+        <option value="Приду">Приду</option>
+        <option value="В раздумьях">В раздумьях</option>
+        <option value="Не смогу">Не смогу</option>
+      </select>
+
+      <div id="guestsCountWrapper" class="hidden">
+        <label for="guestsCount">Сколько человек?</label>
+        <input type="number" id="guestsCount" min="1" value="1">
+      </div>
+
+      <label for="note">Сообщение (по желанию):</label>
+      <textarea id="note"></textarea>
+
+      <button type="submit">Отправить</button>
+      <button type="button" id="clearList">Очистить список</button>
+    </form>
+
+    <h2>Список гостей</h2>
+    <ul id="guestList"></ul>
+
+    <div class="counters">
+      <p id="totalGuests">Общее количество гостей: 0</p>
+      <p id="maybeGuests">В раздумьях: 0</p>
+      <p id="declinedGuests">Не смогут прийти: 0</p>
+    </div>
+
+    <!-- 🔹 Панель администратора -->
+    <div class="admin-panel">
+      <h2>Админ-панель</h2>
+      <div id="adminLogin">
+        <label>Введите пароль администратора:</label>
+        <input type="password" id="adminPass">
+        <button id="loginBtn">Войти</button>
+      </div>
+
+      <div id="adminControls" class="hidden">
+        <label>Дата мероприятия:</label>
+        <input type="text" id="adminDate">
+        <label>Время:</label>
+        <input type="text" id="adminTime">
+        <label>Место:</label>
+        <input type="text" id="adminPlace">
+        <button id="saveEvent">Сохранить изменения</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 🔹 Сохраняем данные мероприятия
+    let eventData = JSON.parse(localStorage.getItem("eventData")) || {
+      date: "12 октября 2025",
+      time: "17:00",
+      place: "г. Алматы, ресторан 'Алтын Орда'"
+    };
+
+    function updateEventInfo() {
+      document.getElementById("eventInfo").textContent =
+        `Дата: ${eventData.date} | Время: ${eventData.time} | Место: ${eventData.place}`;
+    }
+
+    updateEventInfo();
+
+    // 🔹 Работа с гостями
+    const form = document.getElementById('rsvpForm');
+    const guestList = document.getElementById('guestList');
+    const choiceSelect = document.getElementById('choice');
+    const guestsCountWrapper = document.getElementById('guestsCountWrapper');
+    const guestsCountInput = document.getElementById('guestsCount');
+
+    const totalGuestsEl = document.getElementById('totalGuests');
+    const maybeGuestsEl = document.getElementById('maybeGuests');
+    const declinedGuestsEl = document.getElementById('declinedGuests');
+    const clearBtn = document.getElementById('clearList');
+
+    let guests = JSON.parse(localStorage.getItem('guests')) || [];
+
+    function updateList() {
+      guestList.innerHTML = '';
+      let total = 0, maybes = 0, declined = 0;
+
+      guests.forEach(g => {
+        const li = document.createElement('li');
+        li.textContent = `${g.name} — ${g.choice}${g.choice === 'Приду' ? ' ('+g.count+' чел.)' : ''}${g.note ? ' | '+g.note : ''}`;
+        guestList.appendChild(li);
+
+        if (g.choice === 'Приду') total += g.count;
+        if (g.choice === 'В раздумьях') maybes++;
+        if (g.choice === 'Не смогу') declined++;
+      });
+
+      totalGuestsEl.textContent = `Общее количество гостей: ${total}`;
+      maybeGuestsEl.textContent = `В раздумьях: ${maybes}`;
+      declinedGuestsEl.textContent = `Не смогут прийти: ${declined}`;
+    }
+
+    choiceSelect.addEventListener('change', () => {
+      guestsCountWrapper.classList.toggle('hidden', choiceSelect.value !== 'Приду');
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const choice = choiceSelect.value;
+      const note = document.getElementById('note').value.trim();
+      const count = choice === 'Приду' ? parseInt(guestsCountInput.value) || 1 : 0;
+
+      guests.push({ name, choice, note, count });
+      localStorage.setItem('guests', JSON.stringify(guests));
+
+      updateList();
+      form.reset();
+      guestsCountWrapper.classList.add('hidden');
+      alert("Спасибо! Ваш ответ сохранен ✅");
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm("Очистить список гостей?")) {
+        guests = [];
+        localStorage.removeItem('guests');
+        updateList();
+      }
+    });
+
+    updateList();
+
+    // 🔹 Админ-панель
+    const adminPass = "Kingarsen08"; // ← пароль администратора
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const entered = document.getElementById("adminPass").value;
+      if (entered === adminPass) {
+        document.getElementById("adminLogin").classList.add("hidden");
+        document.getElementById("adminControls").classList.remove("hidden");
+
+        // Заполняем текущие данные
+        document.getElementById("adminDate").value = eventData.date;
+        document.getElementById("adminTime").value = eventData.time;
+        document.getElementById("adminPlace").value = eventData.place;
+      } else {
+        alert("Неверный пароль ❌");
+      }
+    });
+
+    document.getElementById("saveEvent").addEventListener("click", () => {
+      eventData.date = document.getElementById("adminDate").value;
+      eventData.time = document.getElementById("adminTime").value;
+      eventData.place = document.getElementById("adminPlace").value;
+
+      localStorage.setItem("eventData", JSON.stringify(eventData));
+      updateEventInfo();
+      alert("Информация обновлена ✅");
+    });
+  </script>
+</body>
+</html>
